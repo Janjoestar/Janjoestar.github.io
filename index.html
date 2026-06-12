@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>◊ TRANSMISSION_NODE // live feed ◊</title>
+<style>
+  :root{
+    --bg:#0a0612;
+    --ink:#e9d5ff;
+    --hot:#ff2e88;
+    --cyan:#00f0ff;
+    --lime:#b6ff3d;
+    --amber:#ffb800;
+    --panel:rgba(20,10,40,.55);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:var(--bg);color:var(--ink);
+    font-family:"Courier New",monospace;overflow-x:hidden}
+
+  /* animated gradient aurora background */
+  body::before{
+    content:"";position:fixed;inset:-50%;z-index:-2;
+    background:
+      radial-gradient(circle at 20% 30%, #ff2e8833, transparent 40%),
+      radial-gradient(circle at 80% 20%, #00f0ff2e, transparent 40%),
+      radial-gradient(circle at 50% 80%, #b6ff3d22, transparent 45%),
+      radial-gradient(circle at 30% 90%, #7a00ff44, transparent 40%);
+    animation:drift 22s ease-in-out infinite alternate;
+  }
+  @keyframes drift{0%{transform:translate(0,0) scale(1)}
+    100%{transform:translate(4%,-3%) scale(1.15) rotate(8deg)}}
+
+  /* CRT scanlines */
+  body::after{
+    content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;
+    background:repeating-linear-gradient(transparent 0 2px, #00000022 3px 4px);
+    mix-blend-mode:overlay;
+  }
+
+  .grain{position:fixed;inset:0;z-index:-1;opacity:.05;pointer-events:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+
+  header{padding:48px 24px 12px;text-align:center}
+  .logo{font-size:clamp(28px,7vw,72px);font-weight:900;letter-spacing:4px;
+    line-height:1;text-transform:uppercase;position:relative;display:inline-block}
+  .logo span{color:var(--hot)}
+  /* glitch */
+  .glitch{position:relative}
+  .glitch::before,.glitch::after{content:attr(data-text);position:absolute;
+    inset:0;overflow:hidden}
+  .glitch::before{color:var(--cyan);animation:gl1 2.6s infinite linear alternate-reverse}
+  .glitch::after{color:var(--hot);animation:gl2 1.8s infinite linear alternate-reverse}
+  @keyframes gl1{0%{clip-path:inset(10% 0 85% 0);transform:translateX(-3px)}
+    50%{clip-path:inset(60% 0 20% 0);transform:translateX(2px)}
+    100%{clip-path:inset(30% 0 40% 0);transform:translateX(-2px)}}
+  @keyframes gl2{0%{clip-path:inset(75% 0 10% 0);transform:translateX(3px)}
+    50%{clip-path:inset(20% 0 55% 0);transform:translateX(-2px)}
+    100%{clip-path:inset(45% 0 25% 0);transform:translateX(2px)}}
+
+  .tag{margin-top:10px;font-size:13px;letter-spacing:6px;color:var(--lime);
+    opacity:.8;text-transform:uppercase}
+  .clock{font-size:13px;color:var(--amber);letter-spacing:2px;margin-top:6px}
+
+  .grid{display:grid;gap:18px;padding:24px;max-width:1200px;margin:0 auto;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+
+  .card{background:var(--panel);border:1px solid #ffffff1a;border-radius:14px;
+    padding:20px;backdrop-filter:blur(10px);position:relative;overflow:hidden;
+    transition:transform .25s, box-shadow .25s, border-color .25s}
+  .card:hover{transform:translateY(-6px);border-color:var(--hot);
+    box-shadow:0 0 30px #ff2e8855}
+  .card h2{font-size:12px;letter-spacing:3px;text-transform:uppercase;
+    color:var(--cyan);margin-bottom:14px;display:flex;justify-content:space-between}
+  .card h2 .dot{width:8px;height:8px;border-radius:50%;background:var(--lime);
+    box-shadow:0 0 10px var(--lime);animation:pulse 1.4s infinite}
+  @keyframes pulse{50%{opacity:.2}}
+  .card.wide{grid-column:1/-1}
+
+  .big{font-size:clamp(22px,4vw,40px);font-weight:900;color:var(--lime);
+    line-height:1.1;text-shadow:0 0 18px #b6ff3d55}
+  .sub{font-size:12px;opacity:.6;margin-top:6px;letter-spacing:1px}
+  .row{display:flex;justify-content:space-between;padding:7px 0;
+    border-bottom:1px dashed #ffffff14;font-size:14px}
+  .row span:last-child{color:var(--amber)}
+
+  .apod img{width:100%;border-radius:10px;display:block;margin-bottom:12px;
+    filter:contrast(1.05) saturate(1.1)}
+  .apod-title{color:var(--hot);font-weight:700;margin-bottom:6px}
+  .apod-text{font-size:12px;opacity:.7;max-height:120px;overflow:auto;line-height:1.5}
+
+  .crew{display:flex;flex-wrap:wrap;gap:8px}
+  .crew .p{font-size:12px;background:#ffffff10;padding:6px 10px;border-radius:20px;
+    border:1px solid #ffffff1a}
+
+  .map{position:relative;width:100%;height:200px;border-radius:10px;overflow:hidden;
+    background:linear-gradient(#001 0,#013 100%)}
+  .iss{position:absolute;font-size:22px;transform:translate(-50%,-50%);
+    transition:left 1s linear,top 1s linear;filter:drop-shadow(0 0 6px var(--cyan))}
+  .grid-lines{position:absolute;inset:0;opacity:.25;
+    background:linear-gradient(#0ff2 1px,transparent 1px) 0 0/100% 20px,
+              linear-gradient(90deg,#0ff2 1px,transparent 1px) 0 0/10% 100%}
+
+  .fact{font-size:16px;line-height:1.6;color:var(--ink)}
+  button.bb{margin-top:14px;background:var(--hot);color:#fff;border:none;
+    padding:10px 18px;border-radius:6px;font-family:inherit;font-weight:700;
+    letter-spacing:2px;cursor:pointer;text-transform:uppercase;font-size:11px;
+    transition:.2s}
+  button.bb:hover{background:var(--cyan);color:#000;transform:scale(1.05)}
+
+  footer{text-align:center;padding:40px 20px 60px;font-size:11px;opacity:.4;
+    letter-spacing:3px}
+  .load{opacity:.4;font-style:italic}
+
+  /* cursor trail */
+  .trail{position:fixed;width:8px;height:8px;border-radius:50%;
+    background:var(--hot);pointer-events:none;z-index:9998;mix-blend-mode:screen}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<header>
+  <div class="logo glitch" data-text="TRANS·MISSION">TRANS<span>·</span>MISSION</div>
+  <div class="tag">// live planetary uplink //</div>
+  <div class="clock" id="clock">--:--:--</div>
+</header>
+
+<main class="grid">
+
+  <!-- ISS LIVE -->
+  <section class="card wide">
+    <h2>ISS // realtime orbital tracker <span class="dot"></span></h2>
+    <div class="map">
+      <div class="grid-lines"></div>
+      <div class="iss" id="iss">🛰️</div>
+    </div>
+    <div style="display:flex;gap:30px;margin-top:14px;flex-wrap:wrap">
+      <div><div class="big" id="lat">--</div><div class="sub">LATITUDE</div></div>
+      <div><div class="big" id="lon">--</div><div class="sub">LONGITUDE</div></div>
+      <div><div class="big" id="vel">--</div><div class="sub">VELOCITY km/h</div></div>
+      <div><div class="big" id="alt">--</div><div class="sub">ALTITUDE km</div></div>
+    </div>
+  </section>
+
+  <!-- PEOPLE IN SPACE -->
+  <section class="card">
+    <h2>humans currently off-world <span class="dot"></span></h2>
+    <div class="big" id="crewcount">--</div>
+    <div class="sub" style="margin-bottom:14px">souls beyond the atmosphere</div>
+    <div class="crew" id="crew"><span class="load">syncing roster…</span></div>
+  </section>
+
+  <!-- BITCOIN -->
+  <section class="card">
+    <h2>bitcoin // value index <span class="dot"></span></h2>
+    <div class="big" id="btc">$ ----</div>
+    <div class="sub">USD per BTC</div>
+    <div class="row"><span>EUR</span><span id="eur">--</span></div>
+    <div class="row"><span>GBP</span><span id="gbp">--</span></div>
+    <div class="sub" id="btctime" style="margin-top:10px"></div>
+  </section>
+
+  <!-- USELESS FACT -->
+  <section class="card">
+    <h2>signal intercept // random data <span class="dot"></span></h2>
+    <div class="fact" id="fact">decrypting transmission…</div>
+    <button class="bb" id="newfact">↻ intercept new signal</button>
+  </section>
+
+  <!-- NASA APOD -->
+  <section class="card wide apod">
+    <h2>NASA // astronomy image of the day <span class="dot"></span></h2>
+    <div id="apod"><div class="load">downloading from deep space…</div></div>
+  </section>
+
+</main>
+
+<footer>BUILT FOR HUMANS · DATA STREAMS FROM OPEN APIS · NO TRACKING · ◊ END OF LINE ◊</footer>
+
+<script>
+/* ---------- live clock ---------- */
+setInterval(()=>{ 
+  document.getElementById('clock').textContent =
+    new Date().toUTCString().split(' ')[4]+' UTC';
+},1000);
+
+/* ---------- cursor trail ---------- */
+const colors=['#ff2e88','#00f0ff','#b6ff3d','#ffb800'];
+document.addEventListener('mousemove',e=>{
+  const t=document.createElement('div');
+  t.className='trail';
+  t.style.left=e.clientX+'px';t.style.top=e.clientY+'px';
+  t.style.background=colors[Math.floor(Math.random()*colors.length)];
+  document.body.appendChild(t);
+  let o=1;
+  const fade=setInterval(()=>{o-=0.06;t.style.opacity=o;
+    t.style.transform=`scale(${o})`;
+    if(o<=0){clearInterval(fade);t.remove();}},16);
+});
+
+/* ---------- ISS tracker ---------- */
+async function iss(){
+  try{
+    const r=await fetch('https://api.wheretheiss.at/v1/satellites/25544');
+    const d=await r.json();
+    document.getElementById('lat').textContent=d.latitude.toFixed(2);
+    document.getElementById('lon').textContent=d.longitude.toFixed(2);
+    document.getElementById('vel').textContent=Math.round(d.velocity).toLocaleString();
+    document.getElementById('alt').textContent=Math.round(d.altitude);
+    const x=((d.longitude+180)/360)*100;
+    const y=((90-d.latitude)/180)*100;
+    const iss=document.getElementById('iss');
+    iss.style.left=x+'%';iss.style.top=y+'%';
+  }catch(e){console.log('iss err',e);}
+}
+iss();setInterval(iss,5000);
+
+/* ---------- people in space ---------- */
+fetch('http://api.open-notify.org/astros.json')
+  .then(r=>r.json())
+  .then(d=>{
+    document.getElementById('crewcount').textContent=d.number;
+    document.getElementById('crew').innerHTML=
+      d.people.map(p=>`<span class="p">👤 ${p.name}</span>`).join('');
+  })
+  .catch(()=>{
+    // fallback if blocked by mixed-content (https page → http api)
+    document.getElementById('crew').innerHTML=
+      '<span class="p" style="color:#ff2e88">⚠ open-notify blocked over https — see note below</span>';
+  });
+
+/* ---------- bitcoin ---------- */
+fetch('https://api.coindesk.com/v1/bpi/currentprice.json')
+  .then(r=>r.json())
+  .then(d=>{
+    document.getElementById('btc').textContent='$ '+d.bpi.USD.rate;
+    document.getElementById('eur').textContent='€ '+d.bpi.EUR.rate;
+    document.getElementById('gbp').textContent='£ '+d.bpi.GBP.rate;
+    document.getElementById('btctime').textContent=d.time.updated;
+  })
+  .catch(()=>{document.getElementById('btc').textContent='offline';});
+
+/* ---------- random fact ---------- */
+async function fact(){
+  document.getElementById('fact').textContent='decrypting transmission…';
+  try{
+    const r=await fetch('https://uselessfacts.jsph.pl/api/v2/facts/random?language=en');
+    const d=await r.json();
+    document.getElementById('fact').textContent='» '+d.text;
+  }catch(e){document.getElementById('fact').textContent='signal lost.';}
+}
+fact();
+document.getElementById('newfact').addEventListener('click',fact);
+
+/* ---------- NASA APOD ---------- */
+fetch('https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY')
+  .then(r=>r.json())
+  .then(d=>{
+    const el=document.getElementById('apod');
+    const media = d.media_type==='image'
+      ? `<img src="${d.url}" alt="${d.title}">`
+      : `<iframe width="100%" height="360" src="${d.url}" frameborder="0" allowfullscreen></iframe>`;
+    el.innerHTML=`${media}
+      <div class="apod-title">${d.title}</div>
+      <div class="apod-text">${d.explanation}</div>`;
+  })
+  .catch(()=>{document.getElementById('apod').innerHTML=
+    '<div class="load">deep space link timed out.</div>';});
+</script>
+</body>
+</html>
